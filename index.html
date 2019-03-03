@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Event Log Counter</title>
+</head>
+<body>
+    <h1>Счетчик событий Event Log в Windows</h1>
+    <div id="EventLogCounter">
+            <p>
+                Имя журнала <input type="text" v-model="logName">
+                Время с <input type="date" v-model="startDate" /> <input type="time" v-model="startTime" />
+                по <input type="date" v-model="finishDate" /> <input type="time" v-model="finishTime" />
+            </p>
+            <p><input type="button" value="Посчитать" v-on:click="Count" /></p>
+            <p v-if="errorsFilds.length">
+                <b>Пожалуйста заполните данные поля(е):</b>
+                <ul>
+                    <li v-for="errorFild in errorsFilds">{{ errorFild }}</li>
+                </ul>
+            </p>
+            <p v-if="errorGet">
+                Ошибка отправки на сервер
+            </p>
+        <p v-else-if="loadingGet">
+            Загрузка...
+        </p>
+
+            <div v-else-if="seeInfo">
+                <p>Ошибки: {{info[0]}}</p>
+                <p>Предупреждения: {{info[1]}}</p>
+                <p>Информация: {{info[2]}}</p>
+            </div>
+    </div>
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        new Vue({
+            el: '#EventLogCounter',
+            data: {
+                info: [],
+                seeInfo: false,
+                logName: null,
+                startDate: null,
+                startTime: null,
+                finishDate: null,
+                finishTime: null,
+                errorsFilds: [],
+                errorGet: false,
+                loadingGet: false
+
+
+            },
+            methods: {
+                Count: function () {
+                    if (this.logName && this.startDate && this.startTime && this.finishDate && this.finishTime) {
+                        this.errorsFilds = [];
+                        this.loadingGet = true;
+                        this.seeInfo = false;
+                        this.errorGet = false;
+                        axios
+                            .get('http://localhost:7132/api/Values?logName=' + this.logName + '&startTime=' + this.startDate + ' ' + this.startTime +
+                                '&finishTime=' + this.finishDate + ' ' + this.finishTime)
+                            .then(response => this.info = response.data)
+                            .catch(error => this.errorGet = true)
+                            .finally(() => (this.loadingGet = false));
+                        if (!this.errorGet)
+                            this.seeInfo = true;
+                    }
+                    else {
+                        this.errorsFilds = [];
+                        if (!this.logName) this.errorsFilds.push("Имя журнала");
+                        if (!this.startDate) this.errorsFilds.push("Дату начала");
+                        if (!this.startTime) this.errorsFilds.push("Время начала");
+                        if (!this.finishDate) this.errorsFilds.push("Дату конца");
+                        if (!this.finishTime) this.errorsFilds.push("Время конца");
+                    }
+                }
+               
+            }
+        });
+    </script>
+</body>
+</html>
